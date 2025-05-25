@@ -4,59 +4,92 @@ import { defineStore } from 'pinia';
 export const useGameLogStore = defineStore('gameLog', {
   state: () => ({
     rawLog: '',
-    parsedLog: [],
+    parsedSections: [],
     players: [],
-    stats: [],
+    currentFilter: null,
   }),
+
   actions: {
-    processLog(log) {
+    setLog(log) {
       this.rawLog = log;
-      this.parseSections();
-      this.extractPlayers();
-      this.calculateStats();
+      this.parseLog();
     },
-    parseSections() {
-      this.parsedLog = this.rawLog.split('\n').map((line) => ({
-        text: line,
-        section: this.detectSection(line),
-      }));
-    },
-    detectSection(line) {
-      if (line.includes('Missionsvorbereitung')) return 'Intro';
-      if (line.includes('Postencheck')) return 'Check-in';
-      if (line.includes('RS Start')) return 'Start';
-      if (line.includes('RS Ende')) return 'End';
-      return 'Action';
-    },
-    extractPlayers() {
-      const players = {};
-      this.parsedLog.forEach(({ text }) => {
-        if (text.includes('Postencheck')) {
-          const nick = text.split(':')[0].trim();
-          if (!players[nick]) players[nick] = { name: nick, nicks: [nick] };
-        }
-      });
-      this.players = Object.values(players);
-    },
-    calculateStats() {
-      this.stats = this.players.map((player) => {
-        const posts = this.parsedLog.filter(({ text }) =>
-          player.nicks.some((nick) => text.startsWith(nick))
-        );
+    parseLog() {
+      // Split log into sections
+      const sections = this.rawLog.split(/(?=\[(?:Intro|Check-in|Start|Action|End)\])/g);
+
+      this.parsedSections = sections.map((section) => {
+        const [header, ...messages] = section.trim().split('\n');
+        const sectionType = header.match(/\[(.*?)\]/)?.[1] || 'Unknown';
+
         return {
-          player: player.name,
-          count: posts.length,
-          histogram: posts.map((post) => post.text.length),
+          type: sectionType,
+          messages: messages.map((msg) => this.parseMessage(msg)),
         };
       });
+
+      this.detectPlayers();
     },
-    getFilteredLog(playerName) {
-      return this.parsedLog
-        .filter(({ text }) =>
-          this.players.find((p) => p.name === playerName)?.nicks.some((nick) => text.startsWith(nick))
-        )
-        .map(({ text }) => text)
-        .join('\n');
+    parseMessage(message) {
+      const timestamp = message.match(/\[(.*?)\]/)?.[1];
+      const player = message.match(/\]\s*(.*?):/)?.[1];
+      const content = message.split(':')?.[1]?.trim();
+
+      return {
+        timestamp,
+        player,
+        content,
+        raw: message,
+      };
+    },
+    detectPlayers() {
+      const playerSet = new Set();
+
+      this.parsedSections.forEach((section) => {
+        if (section.type === 'Check-in') {
+          section.messages.forEach((msg) => {
+            if (msg.player) playerSet.add(msg.player);
+          });
+        }
+      });
+
+      this.players = Array.from(playerSet);
+    },
+    setFilter(player) {
+      this.currentFilter = player;
+    },
+  },
+  getters: {
+    playerStats: (state) => {
+      const stats = {};
+
+      state.players.forEach((player) => {
+        const messages = state.parsedSections
+          .flatMap((section) => section.messages)
+          .filter((msg) => msg.player === player);
+
+        stats[player] = {
+          name: player,
+          messageCount: messages.length,
+          avgMessageLength: Math.round(
+            messages.reduce((sum, msg) => sum + (msg.content?.length || 0), 0) /
+              (messages.length || 1)
+          ),
+        };
+      });
+
+      return Object.values(stats);
+    },
+    filteredMessages: (state) => {
+      const messages = state.parsedSections.flatMap((section) =>
+        section.messages.map((msg) => ({
+          ...msg,
+          section: section.type,
+        }))
+      );
+
+      if (!state.currentFilter) return messages;
+      return messages.filter((msg) => msg.player === state.currentFilter);
     },
   },
 });
