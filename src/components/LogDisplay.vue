@@ -9,6 +9,13 @@
       >
         {{ section }}
       </button>
+      <button
+        @click="currentSection = 'All'"
+        :class="{ active: currentSection === 'All' }"
+        class="clear-button"
+      >
+        Clear
+      </button>
     </div>
     <div class="messages">
       <div
@@ -18,7 +25,7 @@
         :class="{ highlighted: isHighlighted(message) }"
       >
         <span class="timestamp">{{ message.timestamp }}</span>
-        <span class="player">{{ message.player }}:</span>
+        <span class="player">{{ message.nick }}:</span>
         <span class="content">{{ message.content }}</span>
       </div>
     </div>
@@ -30,7 +37,7 @@ import { ref, computed } from 'vue'
 import { useGameLogStore } from '../stores/gameLogStore'
 
 const store = useGameLogStore()
-const sections = ['Intro', 'Check-in', 'Start', 'Action', 'End']
+const sections = ['Vorlauf', 'Missionsvorbereitung', 'Postencheck', 'RS Start', 'RS Ende']
 const currentSection = ref('All')
 
 const filteredMessages = computed(() => {
@@ -62,10 +69,25 @@ const isHighlighted = (message) => {
   cursor: pointer;
 }
 
+.section-filters button.clear-button {
+  background-color: #f8f9fa;
+  border-color: #6c757d;
+}
+
 .section-filters button.active {
   background: #007bff;
   color: white;
   border-color: #0056b3;
+}
+
+.clear-button {
+  background: #f8d7da;
+  color: #721c24;
+  border-color: #f5c6cb;
+}
+
+.clear-button:hover {
+  background: #f5c6cb;
 }
 
 .messages {

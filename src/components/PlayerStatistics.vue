@@ -19,6 +19,12 @@
             <span class="label">Avg Length:</span>
             <span class="value">{{ player.avgMessageLength }}</span>
           </div>
+          <div class="stat-item nicks-list" v-if="player.nicks.length > 1">
+            <span class="label">Also known as:</span>
+            <span class="value nicks">
+              {{ player.nicks.filter(n => n !== player.name).join(', ') }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -80,14 +86,27 @@ const isPlayerFiltered = (player) => {
 }
 
 .stat-details {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
+}
+
+.nicks-list {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+}
+
+.nicks {
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
 }
 
 .label {
@@ -97,5 +116,25 @@ const isPlayerFiltered = (player) => {
 
 .value {
   font-weight: 500;
+}
+
+.debug-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.json-debug {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: monospace;
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 1rem;
+  background-color: #fff;
+  border: 1px solid #eee;
+  border-radius: 4px;
 }
 </style>
