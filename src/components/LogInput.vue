@@ -3,7 +3,7 @@
     <div class="input-methods">
       <textarea
         v-model="logText"
-        placeholder="Paste your IRC game session log here..."
+        placeholder="IRC log hier einfügen..."
         rows="10"
         class="log-textarea"
       ></textarea>
@@ -15,11 +15,11 @@
           id="file-upload"
         >
         <label for="file-upload" class="upload-button">
-          Or upload a log file
+          Oder Log-Datei hochladen
         </label>
       </div>
       <button @click="submitLog" :disabled="!logText" class="submit-button">
-        Process Log
+        Log verarbeiten
       </button>
     </div>
   </div>

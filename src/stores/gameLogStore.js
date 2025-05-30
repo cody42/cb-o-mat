@@ -32,6 +32,9 @@ export const useGameLogStore = defineStore('gameLog', {
           const matchedKeyword = sectionKeywords.find(keyword => 
             msg.content.toLowerCase().includes(keyword.toLowerCase())
           );
+          if (matchedKeyword === 'RS Ende') {
+            currentSection.messages.push(msg);
+          }
           if (matchedKeyword) {
             // Start new section
             if (currentSection.messages.length > 0) {
@@ -41,7 +44,8 @@ export const useGameLogStore = defineStore('gameLog', {
               type: matchedKeyword,
               messages: []
             };
-          } else {
+          }
+          if (matchedKeyword !== 'RS Ende') {
             currentSection.messages.push(msg);
           }
         }
@@ -146,22 +150,56 @@ export const useGameLogStore = defineStore('gameLog', {
     },
   },
   getters: {
+    histogramBinInfo: (state) => {
+      const messageLengths = state.parsedSections
+        .filter((section) => section.type === 'RS Start')
+        .flatMap((section) => section.messages)
+        .map((msg) => msg.content?.length || 0);
+
+      if (messageLengths.length === 0) return 0;
+
+      const maxLength = Math.max(...messageLengths);
+      const binCount = 9; // Fixed number of bins
+      return {
+        binSize: maxLength / binCount,
+        binCount: binCount,
+      };
+    },
     playerStats: (state) => {
       const stats = {};
 
       state.players.forEach((player) => {
         const messages = state.parsedSections
+          .filter((section) => section.type === 'RS Start')
           .flatMap((section) => section.messages)
           .filter((msg) => player.nicks.has(msg.nick));
 
+        // Calculate message lengths
+        const messageLengths = messages.map(msg => msg.content?.length || 0);
+
+        //const maxLength = Math.max(...messageLengths, 1); // ensure at least 1 to avoid division by zero
+        //const binSize = maxLength / 5;
+        const { binSize, binCount } = state.histogramBinInfo;
+        
+        // Create histogram with 5 bins
+        const histogram = Array(binCount).fill(0).map((_, i) => ({
+          minValue: Math.round(i * binSize),
+          maxValue: Math.round((i + 1) * binSize),
+          count: messageLengths.filter(len => 
+            len > i * binSize && len <= (i + 1) * binSize
+          ).length
+        }));
+
         stats[player.name] = {
           name: player.name,
-          nicks: Array.from(player.nicks),
+          nicks: player.nicks,
           messageCount: messages.length,
           avgMessageLength: Math.round(
-            messages.reduce((sum, msg) => sum + (msg.content?.length || 0), 0) /
-              (messages.length || 1)
+            messageLengths.reduce((sum, len) => sum + len, 0) /
+            (messages.length || 1)
           ),
+          totalCharacters: messageLengths.reduce((sum, len) => sum + len, 0),
+          messageHistogram: histogram
         };
       });
 

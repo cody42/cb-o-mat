@@ -14,7 +14,7 @@
         :class="{ active: currentSection === 'All' }"
         class="clear-button"
       >
-        Clear
+        Alles
       </button>
     </div>
     <div class="messages">
