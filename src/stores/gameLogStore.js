@@ -70,24 +70,28 @@ export const useGameLogStore = defineStore('gameLog', {
       // Match the three possible patterns for nick names
       let nick = null;
       let content = null;
+      let type = null;
 
       // Pattern 1: <username>
       const angleMatch = afterTimestamp.match(/^<([^>]+)>\t(.*)$/);
       if (angleMatch) {
         nick = angleMatch[1];
         content = angleMatch[2];
+        type = 'say';
       } else {
         // Pattern 2: * username
         const starUserMatch = afterTimestamp.match(/^\*([^\t]+)\t(.*)$/);
         if (starUserMatch) {
           nick = starUserMatch[1];
           content = starUserMatch[2];
+          type = 'action';
         } else {
           // Pattern 3: just *
           const starMatch = afterTimestamp.match(/^\*\t(.*)$/);
           if (starMatch) {
             nick = '*';
             content = starMatch[1];
+            type = 'control';
           }
         }
       }
@@ -96,6 +100,7 @@ export const useGameLogStore = defineStore('gameLog', {
         timestamp,
         nick,
         content,
+        type,
         raw: message,
       };
     },

@@ -25,7 +25,7 @@
         :class="{ highlighted: isHighlighted(message) }"
       >
         <span class="timestamp">{{ message.timestamp }}</span>
-        <span class="player">{{ message.nick }}:</span>
+        <span class="player">{{ message.nick }}{{ message.type == 'say' ? ':' : '' }}</span>
         <span class="content">{{ message.content }}</span>
       </div>
     </div>
