@@ -8,7 +8,14 @@ export const useGameLogStore = defineStore('gameLog', {
     parsedSections: [],
     players: [], // Will now store objects with { name, nicks }
     currentFilter: null,
-    parser: new IRCLogParser(), // Initialize the parser
+    parser: new IRCLogParser({
+      sectionKeywords: {
+        'RS Start': ['RS Start', 'RS-Start'],
+        'RS Ende': ['RS Ende', 'RS-Ende'],
+        'Missionsvorbereitung': ['Missionsvorbereitung', 'RS Einleitung'],
+        'Postencheck': ['Postencheck', 'Posten Check', 'Posten-Check']
+      },
+    }), // Initialize the parser
   }),
 
   actions: {

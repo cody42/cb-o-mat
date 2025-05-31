@@ -288,7 +288,7 @@ export class IRCLogParser {
     sections.forEach((section) => {
       if (section.type === 'Postencheck') {
         section.messages.forEach((msg) => {
-          if (msg.nick) {
+          if (msg.nick && msg.nick !== '*') {
             playerMap.set(msg.nick, {
               name: msg.nick,
               nicks: new Set([msg.nick])
