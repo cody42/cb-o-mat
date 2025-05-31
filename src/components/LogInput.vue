@@ -88,7 +88,7 @@ const handleFileUpload = (event) => {
 
 const submitLog = () => {
   store.setLog(logText.value)
-  logText.value = ''
+  //logText.value = ''
 }
 </script>
 
