@@ -16,6 +16,9 @@ export const useGameLogStore = defineStore('gameLog', {
       this.rawLog = log;
       this.parseLog();
     },
+    setFlavor(flavor) {
+      this.parser.setFlavor(flavor);
+    },
     parseLog() {
       this.parsedSections = this.parser.parseLog(this.rawLog);
       this.players = this.parser.detectPlayers(this.parsedSections);

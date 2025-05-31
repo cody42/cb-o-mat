@@ -42,6 +42,14 @@ export class IRCLogParser {
       .replace('%newnick%', '(\\S+)');
   }
 
+  setFlavor(flavor) {
+    if (['HexChat', 'mIRC'].includes(flavor)) {
+      this.config.flavor = flavor;
+    } else {
+      throw new Error('Unsupported IRC flavor. Use "HexChat" or "mIRC".');
+    }
+  }
+
   parseLog(rawLog) {
     // First parse all messages
     const lines = rawLog.trim().split('\n');
@@ -96,10 +104,48 @@ export class IRCLogParser {
       : this.parseHexChatMessage(message);
   }
 
+  guessFlavor(rawLog) {
+    // parse the first ten lines to determine the flavor
+    const lines = rawLog.trim().split('\n').slice(0, 10);
+    let result = {
+        flavor: 'unknonwn',
+        confidence: 0,
+        confidenceValues: {
+            HexChat: 0,
+            mIRC: 0
+        }
+    }
+    lines.forEach(line => {
+        if (this.parseHexChatMessage(line) !== null) {
+            result.confidenceValues.HexChat++;
+        }
+        if (this.parseMIRCMessage(line) !== null) {
+            result.confidenceValues.mIRC++;
+        }
+    });
+    result.confidenceValues.HexChat = result.confidenceValues.HexChat / lines.length;
+    result.confidenceValues.mIRC = result.confidenceValues.mIRC / lines.length;
+    // Determine the flavor based on confidence scores
+    if (result.confidenceValues.HexChat > result.confidenceValues.mIRC) {
+        result.flavor = 'HexChat';
+        result.confidence = result.confidenceValues.HexChat;
+    } else if (result.confidenceValues.mIRC > result.confidenceValues.HexChat) {
+        result.flavor = 'mIRC';
+        result.confidence = result.confidenceValues.mIRC;
+    } else {
+        result.flavor = 'unknown';
+    }
+    return result;
+  }
+
   parseHexChatMessage(message) {
+    message = message.trim();
     // Match timestamp at the start
     const timestampMatch = message.match(/^[^*<]* /);
-    if (!timestampMatch) return null;
+    if (!timestampMatch) {
+        console.log('HexChat: no timestamp match for message:', message);
+        return null;
+    }
 
     const timestamp = timestampMatch[1];
     const afterTimestamp = message.substring(timestampMatch[0].length).trim();
@@ -129,6 +175,10 @@ export class IRCLogParser {
           nick = '*';
           content = starMatch[1];
           type = 'control';
+        } else {
+          // Not a recognized pattern
+          console.log('HexChat: no message match for message:', message);
+          return null;
         }
       }
     }
@@ -143,35 +193,87 @@ export class IRCLogParser {
   }
 
   parseMIRCMessage(message) {
-    // TODO: Implement mIRC message parsing
-    // mIRC typically uses different formatting:
+    message = message.trim();
+
+    if (message.startsWith('Session Start: ') || message.startsWith('Session Ident: ') || message.startsWith('Session Close: ')) {
+        return {
+            timestamp: "[00:00]",
+            nick: "*",
+            content: message,
+            type: 'control',
+            raw: message,
+        }
+    }
+    // Check for color codes at the start of the message
+    const colorMatch = message.match(/^(\x03\d{2})/);
+    const leadingColor = colorMatch ? colorMatch[1] : null;
+    
+    // If there was a color, remove it for further parsing
+    const messageWithoutLeadingColor = leadingColor 
+      ? message.substring(leadingColor.length)
+      : message;
+
     // [HH:mm] <nick> message
     // [HH:mm] * nick action
     // [HH:mm] * nick is now known as newNick
-    const timestampMatch = message.match(/^\[[0-9:]+\] /);
-    if (!timestampMatch) return null;
+    const timestampMatch = messageWithoutLeadingColor.match(/^\[[0-9:]+\] /);
+    if (!timestampMatch) {
+        console.log('mIRC: no timestamp match for message:', message);
+        return null;
+    }
 
     const timestamp = timestampMatch[0];
-    const afterTimestamp = message.substring(timestampMatch[0].length);
+    const afterTimestamp = messageWithoutLeadingColor.substring(timestampMatch[0].length).trim();
 
     let nick = null;
     let content = null;
     let type = null;
 
-    // Pattern 1: Regular message
-    const messageMatch = afterTimestamp.match(/^<([^>]+)> (.*)$/);
+    // Pattern 1: Regular message - handle optional mode characters in nick
+    const messageMatch = afterTimestamp.match(/^<([@~&%+])?([^>]+)> (.*)$/);
     if (messageMatch) {
-      nick = messageMatch[1];
-      content = messageMatch[2];
+      nick = messageMatch[2]; // Use capture group 2 which has the nick without the mode
+      content = messageMatch[3];
       type = 'say';
     } else {
-      // Pattern 2: Action or control message
-      const actionMatch = afterTimestamp.match(/^\* ([^ ]+) (.*)$/);
+      // Pattern 2: Action/control messages
+      const actionMatch = afterTimestamp.match(/^\* (.+?) (.*)$/);
       if (actionMatch) {
         nick = actionMatch[1];
         content = actionMatch[2];
-        type = nick === '*' ? 'control' : 'action';
+        
+        // Check for known control message patterns
+        const isControlMessage = (
+          content.match(/^is now known as \S+$/) || // nick change
+          content.match(/^sets mode:/) || // mode change
+          content.match(/^\(\S+\) has (joined|left) #\S+$/) || // join/leave
+          content.match(/^\(\S+\) Quit \(.*\)$/) || // quit
+          content.match(/^\(\S+\) has changed the topic to: /) || // topic change
+          content.match(/^\(\S+\) has been kicked by \S+ \(.*\)$/) || // kick
+          content.match(/^\(\S+\) has been banned from #\S+ by \S+$/) || // ban
+          (nick == "Now" && content.match(/^talking in #\S+$/)) || // channel join
+          (nick == "Topic" && content.match(/^is /)) || // topic set
+          (nick == "Set" && content.match(/^by \S+ on /)) || // topic set by
+          (nick == "You" && content.match(/^are now known as \S+$/)) // self nick change
+        );
+
+        type = isControlMessage ? 'control' : 'action';
+
+        // For known control messages, set nick to '*' to match HexChat behavior
+        if (isControlMessage) {
+          content = nick + ' ' + content; // prepend nick to content
+          nick = '*';
+        }
+      } else {
+        // Not a recognized pattern
+        console.log('mIRC: no message match for message:', message);
+        return null;
       }
+    }
+
+    // If we found a leading color code, add it back to the start of the content
+    if (leadingColor && content) {
+      content = leadingColor + content;
     }
 
     return {
