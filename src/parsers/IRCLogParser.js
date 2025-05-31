@@ -143,7 +143,6 @@ export class IRCLogParser {
     // Match timestamp at the start
     const timestampMatch = message.match(/^[^*<]* /);
     if (!timestampMatch) {
-        console.log('HexChat: no timestamp match for message:', message);
         return null;
     }
 
@@ -177,7 +176,6 @@ export class IRCLogParser {
           type = 'control';
         } else {
           // Not a recognized pattern
-          console.log('HexChat: no message match for message:', message);
           return null;
         }
       }
@@ -218,7 +216,6 @@ export class IRCLogParser {
     // [HH:mm] * nick is now known as newNick
     const timestampMatch = messageWithoutLeadingColor.match(/^\[[0-9:]+\] /);
     if (!timestampMatch) {
-        console.log('mIRC: no timestamp match for message:', message);
         return null;
     }
 
@@ -266,7 +263,6 @@ export class IRCLogParser {
         }
       } else {
         // Not a recognized pattern
-        console.log('mIRC: no message match for message:', message);
         return null;
       }
     }
