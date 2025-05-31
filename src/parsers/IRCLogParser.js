@@ -283,6 +283,7 @@ export class IRCLogParser {
 
   detectPlayers(sections) {
     const playerMap = new Map();
+    const additionalChatterMap = new Map();
 
     // First identify players from postencheck
     sections.forEach((section) => {
@@ -290,6 +291,20 @@ export class IRCLogParser {
         section.messages.forEach((msg) => {
           if (msg.nick && msg.nick !== '*') {
             playerMap.set(msg.nick, {
+              name: msg.nick,
+              nicks: new Set([msg.nick])
+            });
+            if (additionalChatterMap.has(msg.nick)) {
+              additionalChatterMap.delete(msg.nick);
+            }
+          }
+        });
+      } else {
+        // For other sections, add nicknames to additional chatter map
+        // This will help us catch players who might not have been in postencheck
+        section.messages.forEach((msg) => {
+          if (msg.nick && msg.nick !== '*' && !playerMap.has(msg.nick)) {
+            additionalChatterMap.set(msg.nick, {
               name: msg.nick,
               nicks: new Set([msg.nick])
             });
@@ -315,16 +330,45 @@ export class IRCLogParser {
               }
             }
 
-            // If found, add both nicks to that player
+            // If found, add both nicks to that player and remove from additional chatters
             if (player) {
+              additionalChatterMap.get(oldNick)?.nicks.forEach(nick => player.nicks.add(nick));
+              additionalChatterMap.get(newNick)?.nicks.forEach(nick => player.nicks.add(nick));
+              // add in case it was not known before. Can happen if someone changed nick before posting
               player.nicks.add(oldNick);
               player.nicks.add(newNick);
+              additionalChatterMap.delete(oldNick);
+              additionalChatterMap.delete(newNick);
+            } else {
+              // try again for an additional chatter
+              let chatter = null;
+              for (const [, c] of additionalChatterMap) {
+                if (c.nicks.has(oldNick) || c.nicks.has(newNick)) {
+                  chatter = c;
+                  break;
+                }
+              }
+              // If found, add both nicks to that chatter
+              if (chatter) {
+                if (chatter.nicks.has(oldNick)) {
+                  additionalChatterMap.get(newNick)?.nicks.forEach(nick => chatter.nicks.add(nick));
+                  chatter.nicks.add(newNick);
+                  additionalChatterMap.delete(newNick);
+                } else if (chatter.nicks.has(newNick)) {
+                  additionalChatterMap.get(oldNick)?.nicks.forEach(nick => chatter.nicks.add(nick));
+                  chatter.nicks.add(oldNick);
+                  additionalChatterMap.delete(oldNick);
+                }
+              }
             }
           }
         }
       });
     });
 
-    return Array.from(playerMap.values());
+    return {
+      players: Array.from(playerMap.values()),
+      additionalChatters: Array.from(additionalChatterMap.values())
+    };
   }
 }

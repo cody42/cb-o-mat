@@ -7,6 +7,7 @@ export const useGameLogStore = defineStore('gameLog', {
     rawLog: '',
     parsedSections: [],
     players: [], // Will now store objects with { name, nicks }
+    additionalChatters: [], // also { name, nicks }
     currentFilter: null,
     parser: new IRCLogParser({
       sectionKeywords: {
@@ -28,11 +29,22 @@ export const useGameLogStore = defineStore('gameLog', {
     },
     parseLog() {
       this.parsedSections = this.parser.parseLog(this.rawLog);
-      this.players = this.parser.detectPlayers(this.parsedSections);
+      const detected = this.parser.detectPlayers(this.parsedSections);
+      this.players = detected.players;
+      this.additionalChatters = detected.additionalChatters;
     },
     setFilter(player) {
       this.currentFilter = player; // Now expects a player object
     },
+    addPlayer(player) {
+      if (!this.players.some(p => p.name === player.name)) {
+        this.players.push(player);
+      }
+      //remove from additionalChatters if exists
+      this.additionalChatters = this.additionalChatters.filter(
+        (p) => p.name !== player.name
+      );
+    }
   },
   getters: {
     histogramBinInfo: (state) => {

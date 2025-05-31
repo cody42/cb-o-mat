@@ -6,6 +6,7 @@
       <LogInput />
       <LogDisplay />
       <PlayerStatistics />
+      <AdditionalChatters />
     </div>
   </div>
 </template>
@@ -15,6 +16,7 @@ import LogInput from './components/LogInput.vue'
 import LogDisplay from './components/LogDisplay.vue'
 import PlayerStatistics from './components/PlayerStatistics.vue'
 import { useGameLogStore } from './stores/gameLogStore'
+import AdditionalChatters from './components/AdditionalChatters.vue'
 
 const store = useGameLogStore()
 </script>
