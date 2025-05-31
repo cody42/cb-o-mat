@@ -12,7 +12,6 @@
       <button
         @click="currentSection = 'All'"
         :class="{ active: currentSection === 'All' }"
-        class="clear-button"
       >
         Alles
       </button>
@@ -78,16 +77,6 @@ const isHighlighted = (message) => {
   background: #007bff;
   color: white;
   border-color: #0056b3;
-}
-
-.clear-button {
-  background: #f8d7da;
-  color: #721c24;
-  border-color: #f5c6cb;
-}
-
-.clear-button:hover {
-  background: #f5c6cb;
 }
 
 .messages {
