@@ -44,6 +44,26 @@ export const useGameLogStore = defineStore('gameLog', {
       this.additionalChatters = this.additionalChatters.filter(
         (p) => p.name !== player.name
       );
+    },
+    mergePlayers(player1name, player2name) {
+      const player1 = this.players.find(p => p.name === player1name);
+      const player2 = this.players.find(p => p.name === player2name);
+      if (!player1 || !player2) {
+        return;
+      }
+
+      const mergedPlayer = {
+        name: player1.name,
+        nicks: new Set([...player1.nicks, ...player2.nicks]),
+      };
+
+      // Remove both players from the list
+      this.players = this.players.filter(
+        (p) => p.name !== player1.name && p.name !== player2.name
+      );
+
+      // Add the merged player
+      this.players.push(mergedPlayer);
     }
   },
   getters: {

@@ -6,8 +6,8 @@
         v-for="player in playerStats"
         :key="player.name"
         class="player-stat"
-        @click="toggleFilter(player)"
-        :class="{ active: isPlayerFiltered(player) }"
+        @click="clickPlayer(player)"
+        :class="{ active: hightlightPlayer(player) }"
       >
         <div class="player-name">{{ player.name }}</div>
         <div class="stat-details">
@@ -57,14 +57,81 @@
         </div>
       </div>
     </div>
+    <div class="actions">
+      <button
+        class="btn btn-secondary"
+        @click="enterMergeMode"
+        v-if ="playerStats.length > 1 && !mergeMode"
+      >
+        Spieler zusammenführen
+      </button>
+      <div v-if="mergeMode" class="merge-info">
+        Zwei Spieler zum zusammenführen auswählen.
+      </div>
+      <button
+        class="btn btn-primary"
+        @click="mergePlayers"
+        v-if="mergeMode"
+        :disabled="selectedPlayers.size !== 2"
+      >
+        Spieler zusammenführen
+      </button>
+      <button
+        class="btn btn-secondary"
+        @click="leaveMergeMode"
+        v-if="mergeMode"
+        >
+        Zusammenführung abbrechen
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useGameLogStore } from '../stores/gameLogStore'
 
 const store = useGameLogStore()
+
+const mergeMode = ref(false)
+
+const selectedPlayers = ref(new Set())
+
+const enterMergeMode = () => {
+  mergeMode.value = true
+  selectedPlayers.value.clear()
+}
+const leaveMergeMode = () => {
+  mergeMode.value = false
+  selectedPlayers.value.clear()
+}
+
+const mergePlayers = () => {
+  if (selectedPlayers.value.size !== 2) return
+  const playersToMerge = Array.from(selectedPlayers.value)
+  store.mergePlayers(playersToMerge[0], playersToMerge[1])
+  leaveMergeMode()
+  store.setFilter(null) // Clear filter after merging
+}
+
+const clickPlayer = (player) => {
+  if (mergeMode.value) {
+    if (selectedPlayers.value.has(player.name)) {
+      selectedPlayers.value.delete(player.name)
+    } else {
+      selectedPlayers.value.add(player.name)
+    }
+  } else {
+    toggleFilter(player)
+  }
+}
+const hightlightPlayer = (player) => {
+  if (mergeMode.value) {
+    return selectedPlayers.value.has(player.name)
+  } else {
+    return isPlayerFiltered(player)
+  }
+}
 
 const playerStats = computed(() => store.playerStats)
 
@@ -232,5 +299,48 @@ const computeBarHeight = (count, total) => {
   background-color: #fff;
   border: 1px solid #eee;
   border-radius: 4px;
+}
+.btn {
+  margin-top: 0.5rem;
+}
+.btn-secondary {
+  background-color: #f8f9fa;
+  border: 1px solid #6c757d;
+  color: #495057;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  background-color: #e2e6ea;
+}
+.btn-primary {
+  background-color: #007bff;
+  border: none;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-primary:disabled, .btn-primary:disabled:hover {
+  background-color: #007bff80; /* semi-transparent */
+}
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+.actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.merge-info {
+  flex: 1 0 90%;
+  color: #666;
+}
+.actions .btn {
+  flex: 0 0 auto;
 }
 </style>
