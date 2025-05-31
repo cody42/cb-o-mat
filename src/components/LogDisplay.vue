@@ -25,7 +25,8 @@
       >
         <span class="timestamp">{{ message.timestamp }}</span>
         <span class="player">{{ message.nick }}{{ message.type == 'say' ? ':' : '' }}</span>
-        <span class="content">{{ message.content }}</span>
+        <!-- <span class="content">{{ message.content }}</span> -->
+         <IrcMessageContent :content="message.content" />
       </div>
     </div>
   </div>
@@ -34,6 +35,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useGameLogStore } from '../stores/gameLogStore'
+import IrcMessageContent from './IrcMessageContent.vue'
 
 const store = useGameLogStore()
 const sections = ['Vorlauf', 'Missionsvorbereitung', 'Postencheck', 'RS Start', 'RS Ende']
@@ -48,6 +50,7 @@ const filteredMessages = computed(() => {
 const isHighlighted = (message) => {
   return store.currentFilter === message.player
 }
+
 </script>
 
 <style scoped>
