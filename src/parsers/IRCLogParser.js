@@ -37,7 +37,7 @@ export class IRCLogParser {
     });
 
     // Convert nick change pattern to regex
-    this.nickChangeRegex = this.config.patterns.nickChange
+    this.nickChangeRegex = '(?:\\x03\\d{2})?' + this.config.patterns.nickChange
       .replace('%oldnick%', '(\\S+)')
       .replace('%newnick%', '(\\S+)');
   }
@@ -230,14 +230,14 @@ export class IRCLogParser {
     let type = null;
 
     // Pattern 1: Regular message - handle optional mode characters in nick
-    const messageMatch = afterTimestamp.match(/^<([@~&%+])?([^>]+)> (.*)$/);
+    const messageMatch = afterTimestamp.match(/^<(?:[@~&%+])?([^>]+)> (.*)$/);
     if (messageMatch) {
-      nick = messageMatch[2]; // Use capture group 2 which has the nick without the mode
-      content = messageMatch[3];
+      nick = messageMatch[1]; // Use capture group 1 which has the nick without the mode
+      content = messageMatch[2];
       type = 'say';
     } else {
       // Pattern 2: Action/control messages
-      const actionMatch = afterTimestamp.match(/^\* (.+?) (.*)$/);
+      const actionMatch = afterTimestamp.match(/^\* (?:[@~&%+])?(.+?) (.*)$/);
       if (actionMatch) {
         nick = actionMatch[1];
         content = actionMatch[2];

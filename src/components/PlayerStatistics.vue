@@ -48,7 +48,7 @@
               </div>
             </div>
           </div>
-          <div class="stat-item nicks-list" v-if="[...player.nicks].length > 1">
+          <div class="stat-item nicks-list" style="flex-basis: 90%;" v-if="[...player.nicks].length > 1">
             <span class="label">Weitere Nicks:</span>
             <span class="value nicks">
               {{ [...player.nicks].filter(n => n !== player.name).join(', ') }}
