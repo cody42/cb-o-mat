@@ -313,6 +313,9 @@ export class IRCLogParser {
       }
     });
 
+    console.log('Detected players from postencheck:', Array.from(playerMap.keys()));
+    console.log('Detected additional chatters:', Array.from(additionalChatterMap.keys()));
+
     // Then scan for nickname changes in * messages
     sections.forEach((section) => {
       section.messages.forEach((msg) => {
@@ -321,6 +324,8 @@ export class IRCLogParser {
           if (nickChangeMatch) {
             const [, oldNick, newNick] = nickChangeMatch;
             
+            console.log(`Detected nick change: ${oldNick} -> ${newNick}`);
+
             // Find if either nick belongs to a known player
             let player = null;
             for (const [, p] of playerMap) {
@@ -350,14 +355,17 @@ export class IRCLogParser {
               }
               // If found, add both nicks to that chatter
               if (chatter) {
-                if (chatter.nicks.has(oldNick)) {
+                console.log('Chatter:', chatter.name, chatter.nicks);
+                if (chatter.name !== newNick && chatter.nicks.has(oldNick)) {
                   additionalChatterMap.get(newNick)?.nicks.forEach(nick => chatter.nicks.add(nick));
                   chatter.nicks.add(newNick);
                   additionalChatterMap.delete(newNick);
-                } else if (chatter.nicks.has(newNick)) {
+                } else if (chatter.name !== oldNick && chatter.nicks.has(newNick)) {
                   additionalChatterMap.get(oldNick)?.nicks.forEach(nick => chatter.nicks.add(nick));
                   chatter.nicks.add(oldNick);
                   additionalChatterMap.delete(oldNick);
+                } else {
+                  console.warn(`Nick change but chatter not found: ${oldNick} -> ${newNick}, chatter ${chatter.name}`);
                 }
               }
             }
@@ -365,6 +373,9 @@ export class IRCLogParser {
         }
       });
     });
+
+    console.log('Final player list:', Array.from(playerMap.keys()));
+    console.log('Final additional chatter list:', Array.from(additionalChatterMap.keys()));
 
     return {
       players: Array.from(playerMap.values()),
