@@ -11,9 +11,9 @@ export const useGameLogStore = defineStore('gameLog', {
     currentFilter: null,
     parser: new IRCLogParser({
       sectionKeywords: {
-        'RS Start': ['RS Start', 'RS-Start'],
-        'RS Ende': ['RS Ende', 'RS-Ende'],
-        'Missionsvorbereitung': ['Missionsvorbereitung', 'RS Einleitung'],
+        'RS Start': ['RS Start', 'RS-Start', 'RS - Start'],
+        'RS Ende': ['RS Ende', 'RS-Ende', 'RS - Ende'],
+        'Missionsvorbereitung': ['Missionsvorbereitung', 'RS Einleitung', 'RS Vorbereitung'],
         'Postencheck': ['Postencheck', 'Posten Check', 'Posten-Check']
       },
     }), // Initialize the parser
