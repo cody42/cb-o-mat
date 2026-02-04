@@ -214,7 +214,7 @@ export class IRCLogParser {
     // [HH:mm] <nick> message
     // [HH:mm] * nick action
     // [HH:mm] * nick is now known as newNick
-    const timestampMatch = messageWithoutLeadingColor.match(/^\[[0-9:]+\] /);
+    const timestampMatch = messageWithoutLeadingColor.match(/^[\(\[][0-9:]+[\)\]] /);
     if (!timestampMatch) {
         return null;
     }
@@ -227,14 +227,14 @@ export class IRCLogParser {
     let type = null;
 
     // Pattern 1: Regular message - handle optional mode characters in nick
-    const messageMatch = afterTimestamp.match(/^<(?:[@~&%+])?([^>]+)> (.*)$/);
+    const messageMatch = afterTimestamp.match(/(?:^<(?:[@~&%+])?([^>]+)> (.*)$|^\((?:[@~&%+])?([^\)]+)\) (.*)$)/);
     if (messageMatch) {
       nick = messageMatch[1]; // Use capture group 1 which has the nick without the mode
       content = messageMatch[2];
       type = 'say';
     } else {
       // Pattern 2: Action/control messages
-      const actionMatch = afterTimestamp.match(/^\* (?:[@~&%+])?(.+?) (.*)$/);
+      const actionMatch = afterTimestamp.match(/^[\*\u2022] (?:[@~&%+])?(.+?) (.*)$/);
       if (actionMatch) {
         nick = actionMatch[1];
         content = actionMatch[2];
