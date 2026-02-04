@@ -227,7 +227,7 @@ export class IRCLogParser {
     let type = null;
 
     // Pattern 1: Regular message - handle optional mode characters in nick
-    const messageMatch = afterTimestamp.match(/(?:^<(?:[@~&%+])?([^>]+)> (.*)$|^\((?:[@~&%+])?([^\)]+)\) (.*)$)/);
+    const messageMatch = afterTimestamp.match(/^[<(](?:[@~&%+])?([^>)]+)[>)] (.*)$/);
     if (messageMatch) {
       nick = messageMatch[1]; // Use capture group 1 which has the nick without the mode
       content = messageMatch[2];
